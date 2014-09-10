@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import android.app.ListFragment;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.os.AsyncTask;
 //import android.graphics.BitmapFactory;
 //import android.net.Uri;
 import android.os.Bundle;
@@ -26,6 +27,8 @@ public class PictureListFragment extends ListFragment {
 		
 	
 	ArrayList<Picture> picList;
+	private PictureAdapter adapter;
+	private String path; //путь к папке с фотками
 	
 	
 	@Override
@@ -33,13 +36,14 @@ public class PictureListFragment extends ListFragment {
 	{
 		super.onCreate(savedInstanceState);
 		getActivity().setTitle(R.string.app_name);
+		Log.d("Files", "onCreate start");
 		
 		//получить список файлов
 		//filesInFolder
-		String path = Environment.getExternalStorageDirectory().toString() + "/" + Environment.DIRECTORY_DOWNLOADS;
+		path = Environment.getExternalStorageDirectory().toString() + "/" + Environment.DIRECTORY_DOWNLOADS;
 		
-		Log.d("Files", "Path: " + path);
-		Log.d("Files", "Environment getExternalStorageState: " + Environment.getExternalStorageState());
+		//Log.d("Files", "Path: " + path);
+		//Log.d("Files", "Environment getExternalStorageState: " + Environment.getExternalStorageState());
 		
 		/*File fh = new File(path);
 		//список файлов только с расширением *.jpg и *.jpeg
@@ -55,19 +59,17 @@ public class PictureListFragment extends ListFragment {
 			picList.add( new Picture(pictures[i]) );
 		}*/
 		
-		picList = getPicturesInFolder(path);
-		
-		Log.d("Files", "pictures count: " + picList.size());
-		
-		
 		
 								
 		//засунуть массив файлов в ArrayAdapter
 		//ArrayAdapter<File> adapter = new ArrayAdapter<File>(getActivity(), android.R.layout.simple_list_item_1, pictures);
-		//PictureAdapter adapter = new PictureAdapter(pictures);
-		PictureAdapter adapter = new PictureAdapter(picList);
 		
-		setListAdapter(adapter);
+		/*picList = getPicturesInFolder(path);
+		PictureAdapter adapter = new PictureAdapter(picList);
+		setListAdapter(adapter);*/
+		
+		//фоновая сканирование папки с картинками и получение списка файлов
+		new FetchPicturesAsyncTask().execute(path);
 	}
 	
 	
@@ -90,20 +92,21 @@ public class PictureListFragment extends ListFragment {
 		//Log.d("Files", "onListItemClick");
 	}
 	
-	@Override
+		
+	/*@Override
 	public void onResume()
 	{
 		super.onResume();
 		Log.d("Files", "onResume start");
 		
 		//нужно заново просканировать директорию и ообновить содержимое ArrayList<Picture> picList
-		String path = Environment.getExternalStorageDirectory().toString() + "/" + Environment.DIRECTORY_DOWNLOADS;
+		//String path = Environment.getExternalStorageDirectory().toString() + "/" + Environment.DIRECTORY_DOWNLOADS;
 
 		
 		//есть два варинта известить адаптер о том что список файлов изменился (и показать во VIEW)
 		//ВАРИАНТ-1 (если список в свойстве класса и он уже асоциирован с адаптером)
 		picList.clear(); 
-		picList.addAll( getPicturesInFolder(path) );
+		picList.addAll( getPicturesInFolder(path) ); //заново просканировать содержимое папки
 		((PictureAdapter)getListAdapter()).notifyDataSetChanged(); //сообщить что его нужно обновить во View
 		
 		//ВАРИАНТ-2 (напрямую работаем с содержимым адаптера)
@@ -112,7 +115,7 @@ public class PictureListFragment extends ListFragment {
 		//((PictureAdapter)getListAdapter()).addAll( getPicturesInFolder(path) ); //заполнить его обновленным списком (заново сканили папку)
 		//((PictureAdapter)getListAdapter()).notifyDataSetChanged(); //сообщить что его нужно обновить
 		
-	}
+	}*/
 	
 	
 	private class PictureAdapter extends ArrayAdapter<Picture> {
@@ -124,6 +127,7 @@ public class PictureListFragment extends ListFragment {
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent )
 		{
+			Log.d("Files", "PictureAdapter getView");
 			if(convertView == null) {
 				convertView = getActivity().getLayoutInflater().inflate(R.layout.list_item_picture, null);
 			}
@@ -131,27 +135,31 @@ public class PictureListFragment extends ListFragment {
 			Picture pic = getItem(position);
 			
 						
-			TextView picResolution = (TextView)convertView.findViewById(R.id.pic_resolution);
+			TextView picResolutionView = (TextView)convertView.findViewById(R.id.pic_resolution);
 			int[] picOriginalWidthAndHeight = pic.getOriginalWidthAndHeight();
-			picResolution.setText( picOriginalWidthAndHeight[0] + " x " + picOriginalWidthAndHeight[1]);
+			picResolutionView.setText( picOriginalWidthAndHeight[0] + " x " + picOriginalWidthAndHeight[1]);
 			
-			TextView picFileName = (TextView)convertView.findViewById(R.id.pic_file_name);
-			picFileName.setText( pic.getFileName() );
+			TextView picFileNameView = (TextView)convertView.findViewById(R.id.pic_file_name);
+			picFileNameView.setText( pic.getFileName() );
 			
-			ImageView picImage = (ImageView)convertView.findViewById(R.id.pic_image);
+			ImageView picImageView = (ImageView)convertView.findViewById(R.id.pic_image);
+			
+			ViewHolder viewHolder = new ViewHolder();
+			viewHolder.picImageView = picImageView;
+			viewHolder.pic = pic;
+			
 			//Log.d("Files", "picImage ImageView width: "+ picImage.get);
 			//picImage.setImageURI(Uri.fromFile(pic));
 			
 			//нужно ресайзить большие фотки иначе нехватит памяти
 			//Bitmap myBitmap = pic.decodeSampledBitmapFromFile(100, 100);
 			
+			//-------------------------------------
 			//получение размеров экрана телефона (фотки в списке будут на половину ширины)
-			DisplayMetrics displayMetrics = new DisplayMetrics();
+			/*DisplayMetrics displayMetrics = new DisplayMetrics();
 			getActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-			
-						
+									
 			int picItemWidth, picItemHeight;
-			
 			if(displayMetrics.widthPixels < displayMetrics.heightPixels) {
 				//portrait
 				picItemWidth = displayMetrics.widthPixels/2;
@@ -163,11 +171,7 @@ public class PictureListFragment extends ListFragment {
 			}
 			
 			Bitmap myBitmap = pic.getResizedAndCropBitmap( picItemWidth, picItemHeight); // 200 x 100
-			
-			Log.d("Files", "pic <Picture> byte count: "+ myBitmap.getByteCount());
-			Log.d("Files", "myBitmap resolution: " + myBitmap.getWidth() + "x" + myBitmap.getHeight());
-			
-			picImage.setImageBitmap(myBitmap);
+			picImageView.setImageBitmap(myBitmap);*/
 			
 			//---------------------------------------
 			
@@ -195,12 +199,75 @@ public class PictureListFragment extends ListFragment {
 			picImage.setImageBitmap(myBitmap);
 			myBitmap.recycle();*/
 			
+			//new ProcessPictureAsyncTask().execute(viewHolder);
+			//ресайз фоток и их рендеринг
+			new ProcessPictureAsyncTask().execute(viewHolder);
+			
 			return convertView;
 		}
 		
-		
+				
 	}
 	
+	class ViewHolder {
+		public ImageView picImageView;
+		public Picture pic;
+		public Bitmap picBitmap;
+	}
+	
+	//String входной параметр для doInBackground , Void, ArrayList<Picture> - тип результатат и входной параметр для onPostExecute 
+	private class FetchPicturesAsyncTask extends AsyncTask<String, Void, ArrayList<Picture>>
+	{
+		
+		@Override
+		protected ArrayList<Picture> doInBackground(String... folderPath)
+		{
+			return getPicturesInFolder(folderPath[0]);
+		}
+		
+		@Override
+		protected void onPostExecute(ArrayList<Picture> pictureList)
+		{
+			picList = pictureList;
+			//полученый массив файлов фоток засунуть в адаптер
+			adapter = new PictureAdapter(picList);
+			setListAdapter(adapter);
+		}
+	}
+	
+	private class ProcessPictureAsyncTask extends AsyncTask<ViewHolder, Void, ViewHolder>
+	{
+		@Override
+		protected ViewHolder doInBackground(ViewHolder... params)
+		{
+			ViewHolder viewHolder = params[0];
+			
+			DisplayMetrics displayMetrics = new DisplayMetrics();
+			getActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+			
+			int picItemWidth, picItemHeight;
+			
+			if(displayMetrics.widthPixels < displayMetrics.heightPixels) {
+				//portrait
+				picItemWidth = displayMetrics.widthPixels/2;
+				picItemHeight = displayMetrics.heightPixels/6;
+			} else {
+				//landscape
+				picItemWidth = displayMetrics.widthPixels/2;
+				picItemHeight = displayMetrics.heightPixels/3;
+			}
+			
+			viewHolder.picBitmap = viewHolder.pic.getResizedAndCropBitmap( picItemWidth, picItemHeight); // 200 x 100
+			
+			return viewHolder;
+		}
+		
+		@Override
+		protected void onPostExecute(ViewHolder viewHolder)
+		{
+			viewHolder.picImageView.setImageBitmap( viewHolder.picBitmap );
+		}
+	}
 	
 	private ArrayList<Picture> getPicturesInFolder(String path)
 	{
@@ -231,9 +298,9 @@ public class PictureListFragment extends ListFragment {
 		float dp = px / (displayMetrics.densityDpi / 160f); 
 		
 		
-		Log.d("Files", "displayMetrics.widthPixels: "+ displayMetrics.widthPixels);
-		Log.d("Files", "displayMetrics.densityDpi: "+ displayMetrics.densityDpi);
-		Log.d("Files", "dp: "+ dp);
+		//Log.d("Files", "displayMetrics.widthPixels: "+ displayMetrics.widthPixels);
+		//Log.d("Files", "displayMetrics.densityDpi: "+ displayMetrics.densityDpi);
+		//Log.d("Files", "dp: "+ dp);
 		
 		return dp;
 	}

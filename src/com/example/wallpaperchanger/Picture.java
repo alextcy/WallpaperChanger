@@ -57,11 +57,11 @@ public class Picture {
 
 	    // Determine how much to scale down the image
 	    int scaleFactor = Math.min(photoW/targetW, photoH/targetH);
-	    Log.d("Files", "pictures scaleFactor: "+ scaleFactor);
-	    Log.d("Files", "pictures photoW: "+ photoW);
-	    Log.d("Files", "pictures targetW: "+ targetW);
-	    Log.d("Files", "pictures photoH: "+ photoH);
-	    Log.d("Files", "pictures targetH: "+ targetH);
+	    //Log.d("Files", "pictures scaleFactor: "+ scaleFactor);
+	    //Log.d("Files", "pictures photoW: "+ photoW);
+	    //Log.d("Files", "pictures targetW: "+ targetW);
+	    //Log.d("Files", "pictures photoH: "+ photoH);
+	    //Log.d("Files", "pictures targetH: "+ targetH);
 	    
 	    // Decode the image file into a Bitmap sized to fill the View
 	    bmOptions.inJustDecodeBounds = false;

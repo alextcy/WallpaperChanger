@@ -71,7 +71,7 @@ public class PictureFragment extends Fragment {
 		}
 		
 		Bitmap picBitmap = pic.getResizedAndCropBitmap(picBigWidth, picBigHeight);
-		Log.d("Files", "picBitmap resolution: " + picBitmap.getWidth() + "x" + picBitmap.getHeight());
+		//Log.d("Files", "picBitmap resolution: " + picBitmap.getWidth() + "x" + picBitmap.getHeight());
 		
 		ImageView picImage = (ImageView)v.findViewById(R.id.picture_big);
 		picImage.setImageBitmap( picBitmap );
@@ -89,12 +89,12 @@ public class PictureFragment extends Fragment {
 				
 				WallpaperManager wallManager = WallpaperManager.getInstance(getActivity());
 								
-				Log.d("Files", "screen : " + displayMetrics.widthPixels + "x" + displayMetrics.heightPixels);
+				//Log.d("Files", "screen : " + displayMetrics.widthPixels + "x" + displayMetrics.heightPixels);
 				
 				//Bitmap picWallpaperBitmap = pic.decodeSampledBitmapFromFile(displayMetrics.widthPixels, displayMetrics.heightPixels);
 				Bitmap picWallpaperBitmap = pic.getResizedAndCropBitmap(displayMetrics.widthPixels*2, displayMetrics.heightPixels);
 				
-				Log.d("Files", "picWallpaperBitmap resolution: " + picWallpaperBitmap.getWidth() + "x" + picWallpaperBitmap.getHeight());
+				//Log.d("Files", "picWallpaperBitmap resolution: " + picWallpaperBitmap.getWidth() + "x" + picWallpaperBitmap.getHeight());
 				
 				try {
 					
