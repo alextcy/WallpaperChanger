@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
 
+import android.R.string;
 import android.app.ListFragment;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -24,6 +25,7 @@ import android.widget.TextView;
 public class PictureListFragment extends ListFragment {
 	
 	public static final String PIC_FULL_PATH_KEY = "com.example.wallpaperchanger.pic_full_path";
+	//public static final String FOLDER_PATH_KEY = "com.example.wallpaperchanger.folder_path";
 		
 	
 	ArrayList<Picture> picList;
@@ -38,7 +40,7 @@ public class PictureListFragment extends ListFragment {
 		getActivity().setTitle(R.string.app_name);
 		Log.d("Files", "onCreate start");
 		
-		//получить список файлов
+		
 		//filesInFolder
 		path = Environment.getExternalStorageDirectory().toString() + "/" + Environment.DIRECTORY_DOWNLOADS;
 		
@@ -58,19 +60,48 @@ public class PictureListFragment extends ListFragment {
 		for(int i=0; i<pictures.length; i++) {
 			picList.add( new Picture(pictures[i]) );
 		}*/
-		
-		
 								
 		//засунуть массив файлов в ArrayAdapter
 		//ArrayAdapter<File> adapter = new ArrayAdapter<File>(getActivity(), android.R.layout.simple_list_item_1, pictures);
 		
-		/*picList = getPicturesInFolder(path);
+		//получить список файлов
+		picList = getPicturesInFolder(path);
 		PictureAdapter adapter = new PictureAdapter(picList);
-		setListAdapter(adapter);*/
+		setListAdapter(adapter);
 		
 		//фоновая сканирование папки с картинками и получение списка файлов
-		new FetchPicturesAsyncTask().execute(path);
+		//new FetchPicturesAsyncTask().execute(path);
 	}
+	
+	
+	@Override
+	public void onResume()
+	{
+		super.onResume();
+		Log.d("Files", "onResume start");
+		
+		//нужно заново просканировать директорию и ообновить содержимое ArrayList<Picture> picList
+		path = Environment.getExternalStorageDirectory().toString() + "/" + Environment.DIRECTORY_DOWNLOADS;
+
+		
+		
+		//есть два варинта известить адаптер о том что список файлов изменился (и показать во VIEW)
+		//ВАРИАНТ-1 (если список в свойстве класса и он уже асоциирован с адаптером)
+		picList.clear(); 
+		picList.addAll( getPicturesInFolder(path) ); //заново просканировать содержимое папки
+		((PictureAdapter)getListAdapter()).notifyDataSetChanged(); //сообщить что его нужно обновить во View
+		
+		
+		//ВАРИАНТ-2 (напрямую работаем с содержимым адаптера)
+		//получаем адаптер который асоциируется с PictureListFragment (в нашем случае это переменная adapter)
+		//((PictureAdapter)getListAdapter()).clear(); //удалить весь список файлов из адаптера
+		//((PictureAdapter)getListAdapter()).addAll( getPicturesInFolder(path) ); //заполнить его обновленным списком (заново сканили папку)
+		//((PictureAdapter)getListAdapter()).notifyDataSetChanged(); //сообщить что его нужно обновить
+	
+		//фоновая сканирование папки с картинками и получение списка файлов
+		//new FetchPicturesAsyncTask().execute(path);
+	}
+	
 	
 	
 	@Override
@@ -91,31 +122,6 @@ public class PictureListFragment extends ListFragment {
 		
 		//Log.d("Files", "onListItemClick");
 	}
-	
-		
-	/*@Override
-	public void onResume()
-	{
-		super.onResume();
-		Log.d("Files", "onResume start");
-		
-		//нужно заново просканировать директорию и ообновить содержимое ArrayList<Picture> picList
-		//String path = Environment.getExternalStorageDirectory().toString() + "/" + Environment.DIRECTORY_DOWNLOADS;
-
-		
-		//есть два варинта известить адаптер о том что список файлов изменился (и показать во VIEW)
-		//ВАРИАНТ-1 (если список в свойстве класса и он уже асоциирован с адаптером)
-		picList.clear(); 
-		picList.addAll( getPicturesInFolder(path) ); //заново просканировать содержимое папки
-		((PictureAdapter)getListAdapter()).notifyDataSetChanged(); //сообщить что его нужно обновить во View
-		
-		//ВАРИАНТ-2 (напрямую работаем с содержимым адаптера)
-		//получаем адаптер который асоциируется с PictureListFragment (в нашем случае это переменная adapter)
-		//((PictureAdapter)getListAdapter()).clear(); //удалить весь список файлов из адаптера
-		//((PictureAdapter)getListAdapter()).addAll( getPicturesInFolder(path) ); //заполнить его обновленным списком (заново сканили папку)
-		//((PictureAdapter)getListAdapter()).notifyDataSetChanged(); //сообщить что его нужно обновить
-		
-	}*/
 	
 	
 	private class PictureAdapter extends ArrayAdapter<Picture> {
@@ -200,7 +206,7 @@ public class PictureListFragment extends ListFragment {
 			myBitmap.recycle();*/
 			
 			//new ProcessPictureAsyncTask().execute(viewHolder);
-			//ресайз фоток и их рендеринг
+			//ресайз фоток и их рендеринг в фоновом потоке
 			new ProcessPictureAsyncTask().execute(viewHolder);
 			
 			return convertView;
@@ -216,7 +222,7 @@ public class PictureListFragment extends ListFragment {
 	}
 	
 	//String входной параметр для doInBackground , Void, ArrayList<Picture> - тип результатат и входной параметр для onPostExecute 
-	private class FetchPicturesAsyncTask extends AsyncTask<String, Void, ArrayList<Picture>>
+	/*private class FetchPicturesAsyncTask extends AsyncTask<String, Void, ArrayList<Picture>>
 	{
 		
 		@Override
@@ -233,10 +239,11 @@ public class PictureListFragment extends ListFragment {
 			adapter = new PictureAdapter(picList);
 			setListAdapter(adapter);
 		}
-	}
+	}*/
 	
 	private class ProcessPictureAsyncTask extends AsyncTask<ViewHolder, Void, ViewHolder>
 	{
+		//фоновый поток
 		@Override
 		protected ViewHolder doInBackground(ViewHolder... params)
 		{
@@ -262,6 +269,7 @@ public class PictureListFragment extends ListFragment {
 			return viewHolder;
 		}
 		
+		//основной поток (только тут можно менять внешний вид)
 		@Override
 		protected void onPostExecute(ViewHolder viewHolder)
 		{
