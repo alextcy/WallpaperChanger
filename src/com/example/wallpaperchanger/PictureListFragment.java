@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import android.R.string;
 import android.app.ListFragment;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
 //import android.graphics.BitmapFactory;
@@ -25,24 +26,32 @@ import android.widget.TextView;
 public class PictureListFragment extends ListFragment {
 	
 	public static final String PIC_FULL_PATH_KEY = "com.example.wallpaperchanger.pic_full_path";
-	//public static final String FOLDER_PATH_KEY = "com.example.wallpaperchanger.folder_path";
+	public static final String FOLDER_PATH_KEY = "com.example.wallpaperchanger.folder_path";
 		
 	
 	ArrayList<Picture> picList;
 	private PictureAdapter adapter;
 	private String path; //путь к папке с фотками
 	
-	
+		
+	//при первом запуске и повороте экрана
 	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
 		getActivity().setTitle(R.string.app_name);
-		Log.d("Files", "onCreate start");
+		//Log.d("Files", "onCreate start");
 		
-		
-		//filesInFolder
-		path = Environment.getExternalStorageDirectory().toString() + "/" + Environment.DIRECTORY_DOWNLOADS;
+		//путь к папке с картинками по умолчанию
+		String defaultFolderPath = Environment.getExternalStorageDirectory().toString() + "/" + Environment.DIRECTORY_DOWNLOADS;
+				
+		//если в настройках сохранен путь тогда используем его (хранит данные даже между ЗАПУСКАМИ)
+		SharedPreferences preferences = getActivity().getSharedPreferences("myPref", 0);
+		if( preferences.contains(FOLDER_PATH_KEY) == true ) {
+			path = preferences.getString(FOLDER_PATH_KEY, defaultFolderPath);
+		} else {
+			path = defaultFolderPath;
+		}
 		
 		//Log.d("Files", "Path: " + path);
 		//Log.d("Files", "Environment getExternalStorageState: " + Environment.getExternalStorageState());
@@ -78,11 +87,26 @@ public class PictureListFragment extends ListFragment {
 	public void onResume()
 	{
 		super.onResume();
-		Log.d("Files", "onResume start");
+		//Log.d("Files", "onResume start");
 		
-		//нужно заново просканировать директорию и ообновить содержимое ArrayList<Picture> picList
-		path = Environment.getExternalStorageDirectory().toString() + "/" + Environment.DIRECTORY_DOWNLOADS;
-
+		
+	    /*if(path == null) {
+	    	//путь к папке с картинками по умолчанию
+			String defaultFolderPath = Environment.getExternalStorageDirectory().toString() + "/" + Environment.DIRECTORY_DOWNLOADS;
+			
+	    	SharedPreferences preferences = getActivity().getSharedPreferences("myPref", 0);
+			if( preferences.contains(FOLDER_PATH_KEY) == true ) {
+				Log.d("Files", "onResume preferences.contains FOLDER_PATH_KEY");
+				path = preferences.getString(FOLDER_PATH_KEY, defaultFolderPath);
+			} else {
+				Log.d("Files", "onResume preferences EMPTY");
+				path = defaultFolderPath;
+			}
+	    }*/
+	    
+		//востановили путь к папке из глобальной области аргументов
+		//path = getArguments().getString(FOLDER_PATH_KEY);
+		//Log.d("Files", "path from arguments: " + path);
 		
 		
 		//есть два варинта известить адаптер о том что список файлов изменился (и показать во VIEW)
@@ -102,6 +126,17 @@ public class PictureListFragment extends ListFragment {
 		//new FetchPicturesAsyncTask().execute(path);
 	}
 	
+	//при сворачивании в трей или повороте экрана
+	@Override
+	public void onStop()
+	{
+		super.onStop();
+		
+		//Store ONLY private PRIMITIVE data in key-value pairs.
+ 		//   http://developer.android.com/guide/topics/data/data-storage.html
+		SharedPreferences preferences = getActivity().getSharedPreferences("myPref", 0);
+		preferences.edit().putString(FOLDER_PATH_KEY, path).commit();
+	}
 	
 	
 	@Override
