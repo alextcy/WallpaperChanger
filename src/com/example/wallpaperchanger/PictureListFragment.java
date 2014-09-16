@@ -16,12 +16,16 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class PictureListFragment extends ListFragment {
 	
@@ -30,8 +34,10 @@ public class PictureListFragment extends ListFragment {
 		
 	
 	ArrayList<Picture> picList;
-	private PictureAdapter adapter;
-	private String path; //путь к папке с фотками
+	//private PictureAdapter adapter;
+	private String defaultFolderPath; //путь к папке с фотками по умолчанию
+	private String folderPath; //путь к папке с фотками
+	
 	
 		
 	//при первом запуске и повороте экрана
@@ -40,17 +46,20 @@ public class PictureListFragment extends ListFragment {
 	{
 		super.onCreate(savedInstanceState);
 		getActivity().setTitle(R.string.app_name);
+		//фрагмент отвечает за показ меню
+		setHasOptionsMenu(true);
+		
 		//Log.d("Files", "onCreate start");
 		
 		//путь к папке с картинками по умолчанию
-		String defaultFolderPath = Environment.getExternalStorageDirectory().toString() + "/" + Environment.DIRECTORY_DOWNLOADS;
+		defaultFolderPath = Environment.getExternalStorageDirectory().toString() + "/" + Environment.DIRECTORY_DOWNLOADS;
 				
 		//если в настройках сохранен путь тогда используем его (хранит данные даже между ЗАПУСКАМИ)
 		SharedPreferences preferences = getActivity().getSharedPreferences("myPref", 0);
 		if( preferences.contains(FOLDER_PATH_KEY) == true ) {
-			path = preferences.getString(FOLDER_PATH_KEY, defaultFolderPath);
+			folderPath = preferences.getString(FOLDER_PATH_KEY, defaultFolderPath);
 		} else {
-			path = defaultFolderPath;
+			folderPath = defaultFolderPath;
 		}
 		
 		//Log.d("Files", "Path: " + path);
@@ -74,7 +83,7 @@ public class PictureListFragment extends ListFragment {
 		//ArrayAdapter<File> adapter = new ArrayAdapter<File>(getActivity(), android.R.layout.simple_list_item_1, pictures);
 		
 		//получить список файлов
-		picList = getPicturesInFolder(path);
+		picList = getPicturesInFolder(folderPath);
 		PictureAdapter adapter = new PictureAdapter(picList);
 		setListAdapter(adapter);
 		
@@ -91,9 +100,6 @@ public class PictureListFragment extends ListFragment {
 		
 		
 	    /*if(path == null) {
-	    	//путь к папке с картинками по умолчанию
-			String defaultFolderPath = Environment.getExternalStorageDirectory().toString() + "/" + Environment.DIRECTORY_DOWNLOADS;
-			
 	    	SharedPreferences preferences = getActivity().getSharedPreferences("myPref", 0);
 			if( preferences.contains(FOLDER_PATH_KEY) == true ) {
 				Log.d("Files", "onResume preferences.contains FOLDER_PATH_KEY");
@@ -112,7 +118,7 @@ public class PictureListFragment extends ListFragment {
 		//есть два варинта известить адаптер о том что список файлов изменился (и показать во VIEW)
 		//ВАРИАНТ-1 (если список в свойстве класса и он уже асоциирован с адаптером)
 		picList.clear(); 
-		picList.addAll( getPicturesInFolder(path) ); //заново просканировать содержимое папки
+		picList.addAll( getPicturesInFolder(folderPath) ); //заново просканировать содержимое папки
 		((PictureAdapter)getListAdapter()).notifyDataSetChanged(); //сообщить что его нужно обновить во View
 		
 		
@@ -132,10 +138,9 @@ public class PictureListFragment extends ListFragment {
 	{
 		super.onStop();
 		
-		//Store ONLY private PRIMITIVE data in key-value pairs.
- 		//   http://developer.android.com/guide/topics/data/data-storage.html
+		//Store ONLY private PRIMITIVE data in key-value pairs. http://developer.android.com/guide/topics/data/data-storage.html
 		SharedPreferences preferences = getActivity().getSharedPreferences("myPref", 0);
-		preferences.edit().putString(FOLDER_PATH_KEY, path).commit();
+		preferences.edit().putString(FOLDER_PATH_KEY, folderPath).commit();
 	}
 	
 	
@@ -357,6 +362,33 @@ public class PictureListFragment extends ListFragment {
 		float px = dp * (displayMetrics.densityDpi / 160f);
 		
 		return px;
+	}
+	
+	
+	@Override
+	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater)
+	{
+		super.onCreateOptionsMenu(menu, inflater);
+		inflater.inflate(R.menu.picture_list_fragment_menu, menu);
+	}
+	
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item)
+	{
+		//определяем по какому пункту меню кликали 
+		switch (item.getItemId()) {
+			case R.id.menu_item_select_folder:
+				Toast.makeText(getActivity(), "Clicked on Select Folder", Toast.LENGTH_SHORT).show();
+				
+				break;
+	
+			default:
+				super.onOptionsItemSelected(item);
+				break;
+		}
+		
+		return true;
 	}
 	
 }
