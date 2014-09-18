@@ -4,7 +4,10 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
 
+import com.example.wallpaperchanger.folderpicker.FolderpickerDialogFragment;
+
 import android.R.string;
+import android.app.FragmentManager;
 import android.app.ListFragment;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -29,8 +32,9 @@ import android.widget.Toast;
 
 public class PictureListFragment extends ListFragment {
 	
-	public static final String PIC_FULL_PATH_KEY = "com.example.wallpaperchanger.pic_full_path";
-	public static final String FOLDER_PATH_KEY = "com.example.wallpaperchanger.folder_path";
+	public static final String PIC_FULL_PATH_KEY	= "com.example.wallpaperchanger.pic_full_path";
+	public static final String FOLDER_PATH_KEY		= "com.example.wallpaperchanger.folder_path";
+	public static final String DIALOG_FOLDER_PICKER = "com.example.wallpaperchanger.dialog_folder_picker";
 		
 	
 	ArrayList<Picture> picList;
@@ -379,7 +383,10 @@ public class PictureListFragment extends ListFragment {
 		//определяем по какому пункту меню кликали 
 		switch (item.getItemId()) {
 			case R.id.menu_item_select_folder:
-				Toast.makeText(getActivity(), "Clicked on Select Folder", Toast.LENGTH_SHORT).show();
+				//Toast.makeText(getActivity(), "Clicked on Select Folder", Toast.LENGTH_SHORT).show();
+				FragmentManager fm = getActivity().getFragmentManager();
+				FolderpickerDialogFragment dialog = new FolderpickerDialogFragment();
+				dialog.show(fm, DIALOG_FOLDER_PICKER);
 				
 				break;
 	
