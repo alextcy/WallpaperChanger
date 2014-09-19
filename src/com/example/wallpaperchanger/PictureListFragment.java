@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import com.example.wallpaperchanger.folderpicker.FolderpickerDialogFragment;
 
 import android.R.string;
+import android.app.Activity;
 import android.app.FragmentManager;
 import android.app.ListFragment;
 import android.content.Intent;
@@ -35,6 +36,8 @@ public class PictureListFragment extends ListFragment {
 	public static final String PIC_FULL_PATH_KEY	= "com.example.wallpaperchanger.pic_full_path";
 	public static final String FOLDER_PATH_KEY		= "com.example.wallpaperchanger.folder_path";
 	public static final String DIALOG_FOLDER_PICKER = "com.example.wallpaperchanger.dialog_folder_picker";
+	public static final int REQUEST_FOLDER_CODE     = 0;
+	
 		
 	
 	ArrayList<Picture> picList;
@@ -155,7 +158,9 @@ public class PictureListFragment extends ListFragment {
 		
 		//Intent intent = new Intent(getActivity(), PictureActivity.class);
 		Intent intent = new Intent(getActivity(), PicturePagerActivity.class); //ViewPager
-		intent.putExtra(PIC_FULL_PATH_KEY, pic.getFullPath());
+		//intent.putExtra(PIC_FULL_PATH_KEY, pic.getFullPath()); //когда показывали картинку в другом статичном фрагменте не ViewPager
+		//другой фрагмент должен знать из какой папки доставать фотки
+		intent.putExtra(FOLDER_PATH_KEY, folderPath);
 		intent.putExtra(PicturePagerActivity.PIC_POSITION, position); //номер позиции картинки на которую кликнули (чтобы потом показать ее во ViewPager)
 		
 		startActivity(intent);
@@ -368,6 +373,23 @@ public class PictureListFragment extends ListFragment {
 		return px;
 	}
 	
+	@Override
+	public void onActivityResult(int requestCode, int resultCode, Intent data)
+	{
+		if(resultCode != Activity.RESULT_OK) {
+			return;
+		}
+		
+		if(requestCode == REQUEST_FOLDER_CODE) {
+			//получили выбраную папку с фотками
+			folderPath = data.getStringExtra(FolderpickerDialogFragment.FOLDER_SELECTED_KEY);
+			//обновить список фоток из выбраной папки и отобразить их
+			picList.clear();
+			picList.addAll(getPicturesInFolder(folderPath));
+			((PictureAdapter)getListAdapter()).notifyDataSetChanged(); //сообщить что его нужно обновить во View
+			
+		}
+	}
 	
 	@Override
 	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater)
@@ -386,6 +408,8 @@ public class PictureListFragment extends ListFragment {
 				//Toast.makeText(getActivity(), "Clicked on Select Folder", Toast.LENGTH_SHORT).show();
 				FragmentManager fm = getActivity().getFragmentManager();
 				FolderpickerDialogFragment dialog = new FolderpickerDialogFragment();
+				//установили что PictureListFragment будет целевым для FolderpickerDialogFragment (который вернет результат)
+				dialog.setTargetFragment(PictureListFragment.this, REQUEST_FOLDER_CODE);
 				dialog.show(fm, DIALOG_FOLDER_PICKER);
 				
 				break;

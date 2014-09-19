@@ -25,13 +25,19 @@ public class PicturePagerActivity extends Activity {
 	
 	private ViewPager picViewPager;
 	private ArrayList<Picture> picList;
+	//путь к папке с фотками
+	private String folderPath = Environment.getExternalStorageDirectory().toString() + "/" + Environment.DIRECTORY_DOWNLOADS; 
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-		
 		setContentView(R.layout.activity_picture_viewpager);
+		
+		//получаем путь к папке из которой нужно извлечь для показа фотки
+		if(getIntent().getStringExtra(PictureListFragment.FOLDER_PATH_KEY) != null) {
+			folderPath = getIntent().getStringExtra(PictureListFragment.FOLDER_PATH_KEY);
+		}
 		
 		//picViewPager = new ViewPager(this);
 		//picViewPager.setId(R.id.viewPager);
@@ -39,7 +45,7 @@ public class PicturePagerActivity extends Activity {
 		
 		picViewPager = (ViewPager)findViewById(R.id.viewPager);
 			
-		picList = getPicturesInFolder( Environment.getExternalStorageDirectory().toString() + "/" + Environment.DIRECTORY_DOWNLOADS );
+		picList = getPicturesInFolder( getIntent().getStringExtra(PictureListFragment.FOLDER_PATH_KEY) );
 		
 		FragmentManager fm = getFragmentManager();
 		
